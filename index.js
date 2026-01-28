@@ -12,8 +12,8 @@ const http = require('http');
 const socketIO = require('socket.io');
 const path = require('path');
 const fs = require('fs');
-const Database = require('sqlite3');
-const bcryptjs = require('bcryptjs');
+const Database = require('better-sqlite3');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const QRCode = require('qrcode');
 const multer = require('multer');
@@ -333,7 +333,7 @@ function createDefaultUsers() {
   defaultUsers.forEach(user => {
     const exists = checkUser.get(user.username);
     if (!exists) {
-      const hashedPassword = bcryptjs.hashSync(user.password, 10);
+      const hashedPassword = bcrypt.hashSync(user.password, 10);
       insertUser.run(user.name, user.username, hashedPassword, user.role, user.shift, user.phone);
       console.log(`✅ Created user: ${user.username} (${user.role})`);
     }
@@ -415,7 +415,7 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ error: 'الدور غير صحيح' });
     }
 
-    const validPassword = bcryptjs.compareSync(password, user.password);
+    const validPassword = bcrypt.compareSync(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
     }
@@ -470,7 +470,7 @@ app.post('/api/users', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'اسم المستخدم موجود مسبقاً' });
     }
 
-    const hashedPassword = bcryptjs.hashSync(password, 10);
+    const hashedPassword = bcrypt.hashSync(password, 10);
     const result = db.prepare('INSERT INTO users (name, username, password, role, shift, phone) VALUES (?, ?, ?, ?, ?, ?)').run(
       name, username, hashedPassword, role, shift, phone || ''
     );
@@ -530,7 +530,7 @@ app.put('/api/users/:id/change-password', authenticateToken, (req, res) => {
     }
 
     const { newPassword } = req.body;
-    const hashedPassword = bcryptjs.hashSync(newPassword, 10);
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
     db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, req.params.id);
 
     logActivity(req.user.id, 'تغيير كلمة مرور', `ID: ${req.params.id}`);
