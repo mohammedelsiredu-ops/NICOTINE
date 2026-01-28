@@ -18,7 +18,8 @@ const jwt = require('jsonwebtoken');
 const QRCode = require('qrcode');
 const multer = require('multer');
 const moment = require('moment');
-
+const sqlite3 = require('sqlite3').verbose(); 
+const db = new sqlite3.Database(dbPath);
 // ====================================
 // Environment Configuration
 // ====================================
