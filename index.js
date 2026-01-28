@@ -12,8 +12,8 @@ const http = require('http');
 const socketIO = require('socket.io');
 const path = require('path');
 const fs = require('fs');
-const Database = require('better-sqlite3');
-const bcrypt = require('bcrypt');
+const Database = require('sqlite3').verbose();
+const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const QRCode = require('qrcode');
 const multer = require('multer');
@@ -80,7 +80,7 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const db = new Database(dbPath);
+const db = new sqlite3.Database(dbPath);
 db.pragma('journal_mode = WAL');
 
 // ====================================
@@ -415,7 +415,7 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ error: 'الدور غير صحيح' });
     }
 
-    const validPassword = bcrypt.compareSync(password, user.password);
+    const validPassword = bcryptjs.compareSync(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
     }
@@ -450,7 +450,7 @@ app.post('/api/auth/login', (req, res) => {
 // ====================================
 app.get('/api/users', authenticateToken, (req, res) => {
   try {
-    const users = db.prepare('SELECT id, name, username, role, shift, phone, active, created_at FROM users ORDER BY created_at DESC').all();
+    const users = db.prepare('SELECT id, name, username, role, shift, phone, active, created_at FROM users ORDER BY created_at DESC').callback;
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب المستخدمين' });
@@ -470,7 +470,7 @@ app.post('/api/users', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'اسم المستخدم موجود مسبقاً' });
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = bcryptjs.hashSync(password, 10);
     const result = db.prepare('INSERT INTO users (name, username, password, role, shift, phone) VALUES (?, ?, ?, ?, ?, ?)').run(
       name, username, hashedPassword, role, shift, phone || ''
     );
@@ -530,7 +530,7 @@ app.put('/api/users/:id/change-password', authenticateToken, (req, res) => {
     }
 
     const { newPassword } = req.body;
-    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    const hashedPassword = bcryptjs.hashSync(newPassword, 10);
     db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, req.params.id);
 
     logActivity(req.user.id, 'تغيير كلمة مرور', `ID: ${req.params.id}`);
@@ -567,7 +567,7 @@ app.delete('/api/users/:id', authenticateToken, (req, res) => {
 // ====================================
 app.get('/api/patients', authenticateToken, (req, res) => {
   try {
-    const patients = db.prepare('SELECT * FROM patients ORDER BY created_at DESC').all();
+    const patients = db.prepare('SELECT * FROM patients ORDER BY created_at DESC').callback;
     res.json(patients);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب المرضى' });
@@ -640,7 +640,7 @@ app.get('/api/appointments', authenticateToken, (req, res) => {
       JOIN patients p ON a.patient_id = p.id
       LEFT JOIN users u ON a.doctor_id = u.id
       ORDER BY a.appointment_date DESC, a.appointment_time DESC
-    `).all();
+    `).callback;
     res.json(appointments);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب المواعيد' });
@@ -723,7 +723,7 @@ app.get('/api/payments', authenticateToken, (req, res) => {
       FROM payments pay
       JOIN patients p ON pay.patient_id = p.id
       ORDER BY pay.created_at DESC
-    `).all();
+    `).callback;
     res.json(payments);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب المدفوعات' });
@@ -821,7 +821,7 @@ app.get('/api/lab-tests', authenticateToken, (req, res) => {
       JOIN patients p ON lt.patient_id = p.id
       LEFT JOIN users u ON lt.doctor_id = u.id
       ORDER BY lt.created_at DESC
-    `).all();
+    `).callback;
     res.json(tests);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب التحاليل' });
@@ -910,7 +910,7 @@ app.put('/api/lab-tests/:id', authenticateToken, (req, res) => {
 
 app.get('/api/test-statistics', authenticateToken, (req, res) => {
   try {
-    const stats = db.prepare('SELECT * FROM test_statistics ORDER BY count DESC LIMIT 50').all();
+    const stats = db.prepare('SELECT * FROM test_statistics ORDER BY count DESC LIMIT 50').callback;
     res.json(stats);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب الإحصائيات' });
@@ -928,7 +928,7 @@ app.get('/api/prescriptions', authenticateToken, (req, res) => {
       JOIN patients p ON pr.patient_id = p.id
       LEFT JOIN users u ON pr.doctor_id = u.id
       ORDER BY pr.created_at DESC
-    `).all();
+    `).callback;
     res.json(prescriptions);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب الوصفات' });
@@ -1008,7 +1008,7 @@ app.put('/api/prescriptions/:id', authenticateToken, (req, res) => {
 // ====================================
 app.get('/api/inventory', authenticateToken, (req, res) => {
   try {
-    const inventory = db.prepare('SELECT * FROM inventory ORDER BY medicine_name').all();
+    const inventory = db.prepare('SELECT * FROM inventory ORDER BY medicine_name').callback;
     
     const today = moment().format('YYYY-MM-DD');
     const alerts = inventory.filter(item => {
@@ -1100,7 +1100,7 @@ app.get('/api/nursing-orders', authenticateToken, (req, res) => {
       JOIN patients p ON no.patient_id = p.id
       LEFT JOIN users u ON no.doctor_id = u.id
       ORDER BY no.created_at DESC
-    `).all();
+    `).callback;
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب طلبات التمريض' });
@@ -1158,7 +1158,7 @@ app.get('/api/ultrasound-orders', authenticateToken, (req, res) => {
       JOIN patients p ON uo.patient_id = p.id
       LEFT JOIN users u ON uo.doctor_id = u.id
       ORDER BY uo.created_at DESC
-    `).all();
+    `).callback;
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: 'خطأ في جلب طلبات الموجات' });
@@ -1245,7 +1245,7 @@ app.get('/api/admin-notes', authenticateToken, (req, res) => {
       FROM admin_notes an
       JOIN users u ON an.from_user_id = u.id
       ORDER BY an.created_at DESC
-    `).all();
+    `).callback;
     
     res.json(notes);
   } catch (error) {
@@ -1289,13 +1289,13 @@ app.put('/api/admin-notes/:id', authenticateToken, (req, res) => {
 // ====================================
 app.get('/api/statistics', authenticateToken, (req, res) => {
   try {
-    const totalPatients = db.prepare('SELECT COUNT(*) as count FROM patients').get().count;
-    const totalTests = db.prepare('SELECT COUNT(*) as count FROM lab_tests').get().count;
-    const pendingTests = db.prepare("SELECT COUNT(*) as count FROM lab_tests WHERE status = 'pending'").get().count;
-    const activePrescriptions = db.prepare("SELECT COUNT(*) as count FROM prescriptions WHERE status = 'active'").get().count;
-    const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users WHERE active = 1').get().count;
-    const totalAppointments = db.prepare('SELECT COUNT(*) as count FROM appointments').get().count;
-    const totalPayments = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payments').get().total;
+    const totalPatients = db.prepare('SELECT COUNT(*) as count FROM patients').callback.count;
+    const totalTests = db.prepare('SELECT COUNT(*) as count FROM lab_tests').callback.count;
+    const pendingTests = db.prepare("SELECT COUNT(*) as count FROM lab_tests WHERE status = 'pending'").callback.count;
+    const activePrescriptions = db.prepare("SELECT COUNT(*) as count FROM prescriptions WHERE status = 'active'").callback.count;
+    const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users WHERE active = 1').callback.count;
+    const totalAppointments = db.prepare('SELECT COUNT(*) as count FROM appointments').callback.count;
+    const totalPayments = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM payments').callback.total;
     
     const ageGroups = db.prepare(`
       SELECT 
@@ -1307,7 +1307,7 @@ app.get('/api/statistics', authenticateToken, (req, res) => {
         COUNT(*) as count
       FROM patients
       GROUP BY age_group
-    `).all();
+    `).callback;
 
     const topDiseases = db.prepare(`
       SELECT diagnosis, COUNT(*) as count
@@ -1316,7 +1316,7 @@ app.get('/api/statistics', authenticateToken, (req, res) => {
       GROUP BY diagnosis
       ORDER BY count DESC
       LIMIT 10
-    `).all();
+    `).callback;
 
     res.json({
       totalPatients,
@@ -1349,7 +1349,7 @@ app.get('/api/activity-log', authenticateToken, (req, res) => {
       JOIN users u ON al.user_id = u.id
       ORDER BY al.created_at DESC
       LIMIT 100
-    `).all();
+    `).callback;
     
     res.json(logs);
   } catch (error) {
