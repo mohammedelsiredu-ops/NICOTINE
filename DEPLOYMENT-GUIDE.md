@@ -1,439 +1,505 @@
-# 🚀 NICOTINE Clinic - Deployment Guide
+# 🚀 NICOTINE Clinic v3.1 - Deployment Guide
 
-## 📋 Prerequisites Checklist
+## 📋 What's New in v3.1
 
-Before deploying, ensure you have:
+### ✅ Library Migration
+- **Replaced** `better-sqlite3` → `sqlite3` (async, no native compilation issues)
+- **Replaced** `bcrypt` → `bcryptjs` (pure JavaScript, Render-compatible)
 
-- [x] Node.js 16+ installed
-- [x] Git installed
-- [x] GitHub account created
-- [x] All syntax errors fixed in server/index.js
-- [x] .env file configured (don't commit this!)
-- [x] All dependencies installed
+### ✅ Modernization
+- **Full async/await** refactoring - all database operations are now Promise-based
+- **Centralized error handling** - custom `AppError` class and global error middleware
+- **Enhanced Socket.io** - real-time updates across all departments
+- **Modular design** - clean separation of concerns
+
+### ✅ Production Ready
+- **Render.com optimized** - listens on `0.0.0.0` with proper PORT handling
+- **Graceful shutdown** - proper database connection cleanup
+- **Comprehensive logging** - request tracking and error monitoring
+- **Security hardened** - JWT expiration, role-based auth, input validation
 
 ---
 
-## 🔧 Step 1: Fix Local Setup
+## 🛠️ Installation & Setup
 
-### 1.1 Replace server/index.js
+### 1. Install Dependencies
+
 ```bash
-# Backup your old file (optional)
-cp server/index.js server/index.js.backup
-
-# Replace with the fixed version
-# Copy the content from FIXED-server-index.js to server/index.js
-```
-
-### 1.2 Create .env file
-```bash
-# Copy the template
-cp .env.template .env
-
-# Edit .env and set your values
-nano .env  # or use your preferred editor
-```
-
-**Required changes in .env:**
-```env
-SECRET_KEY=your-random-32-char-secret-key-here
-NODE_ENV=production
-CORS_ORIGIN=https://your-domain.com  # Or * for development
-```
-
-### 1.3 Test locally
-```bash
-# Install dependencies
 npm install
+```
 
-# Start the server
+**New dependencies:**
+- `sqlite3@^5.1.7` - Async SQLite with Promise support
+- `bcryptjs@^2.4.3` - Pure JavaScript bcrypt implementation
+
+### 2. Environment Configuration
+
+Create `.env` file:
+
+```bash
+cp .env.template .env
+```
+
+**Critical settings:**
+```env
+PORT=3000
+NODE_ENV=production
+SECRET_KEY=your-super-secret-jwt-key-min-32-chars-change-this
+CORS_ORIGIN=*
+DATABASE_PATH=./database/nicotine.db
+BANKAK_ACCOUNT=YOUR_BANKAK_ACCOUNT_NUMBER
+```
+
+**⚠️ IMPORTANT:** Change `SECRET_KEY` to a strong random string (minimum 32 characters)
+
+Generate a secure key:
+```bash
+# Option 1: OpenSSL
+openssl rand -base64 32
+
+# Option 2: Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 3. Test Locally
+
+```bash
 npm start
-
-# You should see:
-# ✅ Database tables created
-# 📡 Server running on port: 3000
 ```
 
-**Test in browser:**
-- Open: http://localhost:3000
-- Login with: admin / admin123
-
-✅ If it works, proceed to deployment!
+Access: `http://localhost:3000`
 
 ---
 
-## 🌐 Step 2: Initialize Git Repository
+## ☁️ Render.com Deployment (Recommended)
 
-### 2.1 Initialize Git (if not already initialized)
+### Why Render?
+- ✅ **No build issues** with sqlite3 and bcryptjs
+- ✅ **Automatic deploys** from GitHub
+- ✅ **Free tier** available
+- ✅ **Zero configuration** needed
+
+### Step-by-Step Deployment
+
+#### 1. Push to GitHub
+
 ```bash
-# Navigate to your project folder
-cd /path/to/nicotine-clinic
-
-# Initialize git
 git init
-
-# Add .gitignore
-# (Make sure .gitignore file is in place)
-
-# Check git status
-git status
-```
-
-### 2.2 Stage files
-```bash
-# Add all files (except those in .gitignore)
 git add .
-
-# Verify what will be committed
-git status
-
-# ⚠️ IMPORTANT: Make sure .env is NOT listed!
-# If .env appears, your .gitignore is wrong!
-```
-
-### 2.3 Make first commit
-```bash
-# Commit with a message
-git commit -m "Initial commit - NICOTINE Clinic v3.0"
-```
-
----
-
-## 📤 Step 3: Push to GitHub
-
-### 3.1 Create GitHub Repository
-
-**Option A: Via GitHub Website**
-1. Go to https://github.com/mohammedelsir95-maker
-2. Click "New Repository"
-3. Name: `nicotine-clinic`
-4. Description: "Complete Medical Clinic Management System"
-5. ⚠️ **Do NOT** initialize with README (you already have one)
-6. Click "Create repository"
-
-**Option B: Via GitHub CLI**
-```bash
-gh repo create nicotine-clinic --public --source=. --remote=origin
-```
-
-### 3.2 Link remote repository
-```bash
-# Add GitHub as remote
+git commit -m "NICOTINE Clinic v3.1 - Production ready"
 git remote add origin https://github.com/mohammedelsir95-maker/nicotine-clinic.git
-
-# Verify remote
-git remote -v
-```
-
-### 3.3 Push to GitHub
-```bash
-# Push to main branch
 git branch -M main
 git push -u origin main
 ```
 
-**Expected output:**
-```
-Enumerating objects: 45, done.
-Counting objects: 100% (45/45), done.
-Writing objects: 100% (45/45), 150 KB | 5 MB/s, done.
-To https://github.com/mohammedelsir95-maker/nicotine-clinic.git
- * [new branch]      main -> main
-```
+#### 2. Create Render Web Service
 
-✅ Your code is now on GitHub!
+1. Go to https://render.com
+2. Click **"New +"** → **"Web Service"**
+3. Connect your GitHub repository
+4. Configure:
 
----
-
-## ☁️ Step 4: Deploy to Cloud Platform
-
-### Option A: Deploy to Render.com (Recommended - Free Tier)
-
-**4A.1 Sign up**
-- Go to https://render.com
-- Sign up with GitHub account
-
-**4A.2 Create New Web Service**
-1. Click "New +" → "Web Service"
-2. Connect your GitHub repository: `nicotine-clinic`
-3. Configure:
-   - **Name:** `nicotine-clinic`
-   - **Region:** Choose closest to Sudan (EU/Frankfurt recommended)
-   - **Branch:** `main`
-   - **Root Directory:** Leave empty
-   - **Runtime:** `Node`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-   - **Instance Type:** `Free`
-
-**4A.3 Add Environment Variables**
-In Render dashboard, go to "Environment":
-- `SECRET_KEY` = your-secret-key
-- `NODE_ENV` = production
-- `CORS_ORIGIN` = * (or your domain)
-- `BANKAK_ACCOUNT` = your-bankak-account
-
-**4A.4 Deploy**
-- Click "Create Web Service"
-- Wait 3-5 minutes for deployment
-- Your app will be at: `https://nicotine-clinic.onrender.com`
-
----
-
-### Option B: Deploy to Heroku
-
-**4B.1 Install Heroku CLI**
-```bash
-# macOS
-brew tap heroku/brew && brew install heroku
-
-# Windows
-# Download from: https://devcenter.heroku.com/articles/heroku-cli
-
-# Ubuntu/Linux
-curl https://cli-assets.heroku.com/install.sh | sh
+```yaml
+Name: nicotine-clinic
+Environment: Node
+Build Command: npm install
+Start Command: npm start
 ```
 
-**4B.2 Login to Heroku**
-```bash
-heroku login
+#### 3. Add Environment Variables
+
+In Render dashboard, add these variables:
+
+| Key | Value | Notes |
+|-----|-------|-------|
+| `NODE_ENV` | `production` | Required |
+| `SECRET_KEY` | `[your-32-char-key]` | **CRITICAL** |
+| `CORS_ORIGIN` | `*` | Or your domain |
+| `BANKAK_ACCOUNT` | `[your-account]` | Optional |
+
+#### 4. Deploy
+
+Click **"Create Web Service"** - Render will:
+- Install dependencies (no compilation errors!)
+- Start the server
+- Provide your live URL
+
+### Expected Result
 ```
-
-**4B.3 Create Heroku App**
-```bash
-# Create app
-heroku create nicotine-clinic
-
-# Or with specific name
-heroku create your-custom-name
-```
-
-**4B.4 Set Environment Variables**
-```bash
-heroku config:set SECRET_KEY="your-secret-key"
-heroku config:set NODE_ENV=production
-heroku config:set CORS_ORIGIN="*"
-heroku config:set BANKAK_ACCOUNT="your-account"
-```
-
-**4B.5 Deploy to Heroku**
-```bash
-# Push to Heroku
-git push heroku main
-
-# Open in browser
-heroku open
+✅ Server Status: Live
+🌐 URL: https://nicotine-clinic-xxxx.onrender.com
 ```
 
 ---
 
-### Option C: Deploy to Railway.app
+## 🔧 Key Technical Improvements
 
-**4C.1 Sign up**
-- Go to https://railway.app
-- Sign up with GitHub
+### 1. Database Wrapper (Async)
 
-**4C.2 Create New Project**
-1. Click "New Project"
-2. Select "Deploy from GitHub repo"
-3. Choose `nicotine-clinic`
-
-**4C.3 Configure**
-- Railway auto-detects Node.js
-- Add environment variables in "Variables" tab
-- Deploy automatically happens
-
-**4C.4 Access**
-- Get URL from "Settings" → "Domains"
-- Click "Generate Domain"
-
----
-
-## 🔍 Step 5: Verify Deployment
-
-### Test Checklist:
-- [ ] ✅ Website loads: https://your-app.com
-- [ ] ✅ Login works: admin / admin123
-- [ ] ✅ Can create new patient
-- [ ] ✅ Can create appointment
-- [ ] ✅ All sections accessible
-- [ ] ✅ WebSocket works (real-time updates)
-
-### Health Check:
-```bash
-curl https://your-app.com/health
+**Old (better-sqlite3):**
+```javascript
+const result = db.prepare('SELECT * FROM users').all(); // Sync
 ```
 
-Expected response:
-```json
-{
-  "status": "OK",
-  "timestamp": "2026-01-28T...",
-  "uptime": 123.45,
-  "environment": "production"
+**New (sqlite3 + Promises):**
+```javascript
+const result = await db.all('SELECT * FROM users'); // Async
+```
+
+**Benefits:**
+- Non-blocking I/O
+- Better concurrency
+- Proper error handling with try-catch
+
+### 2. Password Hashing (Pure JS)
+
+**Old (bcrypt):**
+```javascript
+const hash = bcrypt.hashSync(password, 10); // Native module, requires compilation
+```
+
+**New (bcryptjs):**
+```javascript
+const hash = await bcrypt.hash(password, 10); // Pure JavaScript, no compilation
+```
+
+**Benefits:**
+- Works on all platforms (no node-gyp)
+- No deployment issues on Render/Heroku
+- Same security level
+
+### 3. Error Handling
+
+**Centralized middleware:**
+```javascript
+class AppError extends Error {
+  constructor(message, statusCode = 500) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = true;
+  }
 }
+
+// Usage
+throw new AppError('اسم المستخدم أو كلمة المرور غير صحيحة', 401);
 ```
+
+**Global handler:**
+- Catches all errors
+- Distinguishes operational vs programming errors
+- Provides helpful messages in Arabic
+- Logs stack traces in development
+
+### 4. Real-Time Updates
+
+**Enhanced Socket.io events:**
+```javascript
+// Lab test created
+emitRealTimeUpdate('lab_test_created', { 
+  id: result.lastID, 
+  patient_id, 
+  status: 'pending' 
+});
+
+// Prescription dispensed
+emitRealTimeUpdate('prescription_dispensed', { 
+  id: req.params.id 
+});
+```
+
+**All departments get instant updates:**
+- Lab results ready → Doctor notified
+- Prescription created → Pharmacy notified
+- Payment received → Reception updated
+
+### 5. Role-Based Access Control
+
+**Middleware:**
+```javascript
+authorizeRoles('doctor', 'admin')
+```
+
+**Protected routes:**
+- `/api/medical-records` → Doctor, Admin only
+- `/api/inventory` → Pharmacy, Admin only
+- `/api/users` → Admin only
 
 ---
 
-## 🔒 Step 6: Security Post-Deployment
+## 🔐 Security Features
 
-### Immediately after deployment:
+1. **JWT Authentication**
+   - 24-hour token expiration
+   - Secure secret key
+   - Role-based claims
 
-**6.1 Change default passwords**
-- Login as admin
-- Go to Users Management
-- Change all default passwords!
+2. **Password Security**
+   - bcryptjs with 10 salt rounds
+   - Minimum 6 characters
+   - No plaintext storage
 
-**6.2 Create real admin user**
-```
-Name: Your Name
-Username: your-username
-Password: strong-password-here
-Role: admin
-```
+3. **Input Validation**
+   - Required field checks
+   - File type restrictions (images, PDFs only)
+   - File size limits (10MB)
 
-**6.3 Disable default admin (optional)**
-- After creating your own admin
-- Disable the default `admin` user
+4. **SQL Injection Prevention**
+   - Parameterized queries
+   - No raw SQL concatenation
+
+5. **CORS Configuration**
+   - Configurable origins
+   - Credentials support
 
 ---
 
-## 📊 Step 7: Monitor Your App
+## 📊 API Endpoints
 
-### Render.com
-- Check "Logs" tab for errors
-- Monitor "Metrics" for performance
+### Authentication
+- `POST /api/login` - User login
+- `POST /api/change-password` - Change password
 
-### Heroku
-```bash
-# View logs
-heroku logs --tail
+### Patients
+- `GET /api/patients` - List all patients
+- `POST /api/patients` - Create patient
+- `PUT /api/patients/:id` - Update patient
+- `DELETE /api/patients/:id` - Delete patient
 
-# Check status
-heroku ps
+### Lab Tests
+- `GET /api/lab-tests` - All tests
+- `GET /api/lab-tests/pending` - Pending only
+- `POST /api/lab-tests` - Create test
+- `PUT /api/lab-tests/:id` - Update results
+
+### Prescriptions
+- `GET /api/prescriptions` - All prescriptions
+- `GET /api/prescriptions/active` - Active only
+- `POST /api/prescriptions` - Create prescription
+- `PUT /api/prescriptions/:id/dispense` - Dispense medicine
+
+### Inventory
+- `GET /api/inventory` - All medicines
+- `GET /api/inventory/low-stock` - Low stock alerts
+- `POST /api/inventory` - Add medicine
+- `PUT /api/inventory/:id` - Update stock
+
+### Statistics
+- `GET /api/statistics` - Dashboard data
+- `GET /api/test-statistics` - Popular tests
+- `GET /api/activity-log` - User activity (Admin only)
+
+### Health Check
+- `GET /health` - Server status
+
+---
+
+## 🔄 Real-Time Events
+
+Client-side Socket.io events to listen for:
+
+```javascript
+socket.on('lab_test_created', (data) => {
+  console.log('New lab test:', data);
+  // Refresh lab tests list
+});
+
+socket.on('prescription_created', (data) => {
+  console.log('New prescription:', data);
+  // Update pharmacy queue
+});
+
+socket.on('patient_created', (data) => {
+  console.log('New patient:', data);
+  // Refresh patient list
+});
+
+socket.on('activity_logged', (data) => {
+  console.log('Activity:', data);
+  // Update activity feed
+});
 ```
-
-### Railway
-- Check "Deployments" tab
-- View real-time logs
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Issue: "Application Error" or 500
-**Solution:**
-```bash
-# Check logs
-# Render: Dashboard → Logs
-# Heroku: heroku logs --tail
-# Railway: Deployments → View Logs
+### Issue: "Module not found: sqlite3"
+**Solution:** Ensure `sqlite3` is in `dependencies`, not `devDependencies`
 
-# Common fixes:
-1. Verify all environment variables are set
-2. Check SECRET_KEY is set
-3. Ensure PORT is not hardcoded (use process.env.PORT)
+```bash
+npm install sqlite3 --save
 ```
 
-### Issue: Database not persisting
-**Solution:**
+### Issue: "bcrypt compilation error"
+**Solution:** You shouldn't see this anymore! We use `bcryptjs` (pure JS)
+
+### Issue: "Port already in use"
+**Solution:** 
 ```bash
-# Free tier platforms restart periodically
-# Data in SQLite will be lost on restart
-# For production, consider upgrading to:
-- Paid tier with persistent disk
-- Or use PostgreSQL addon
+# Kill process on port 3000
+lsof -i :3000
+kill -9 <PID>
 ```
 
-### Issue: Can't access from mobile/other devices
-**Solution:**
-- Make sure CORS_ORIGIN is set to "*" or includes your domain
-- Check firewall rules on your platform
+### Issue: "Database locked"
+**Solution:** We use WAL mode, but ensure no multiple instances:
+```bash
+ps aux | grep node
+kill -9 <PID>
+```
+
+### Issue: "CORS error"
+**Solution:** Set `CORS_ORIGIN` in `.env` or Render environment variables
 
 ---
 
-## 🔄 Step 8: Update Your Deployment
+## 📈 Performance Optimizations
 
-When you make changes:
+1. **WAL Mode** - Better concurrency for SQLite
+   ```javascript
+   db.run('PRAGMA journal_mode = WAL');
+   ```
 
+2. **Connection Pooling** - Single database instance
+3. **Async Operations** - Non-blocking I/O throughout
+4. **Index Optimization** - Foreign keys and primary keys
+5. **Socket.io Transports** - WebSocket + polling fallback
+
+---
+
+## 🔍 Monitoring
+
+### Health Check Endpoint
 ```bash
-# 1. Make your changes locally
-# 2. Test locally
+curl https://your-app.onrender.com/health
+```
+
+**Response:**
+```json
+{
+  "status": "OK",
+  "timestamp": "2026-01-28T12:00:00.000Z",
+  "uptime": 3600.5,
+  "environment": "production",
+  "version": "3.1.0"
+}
+```
+
+### Logs
+```bash
+# Local
 npm start
 
-# 3. Commit changes
-git add .
-git commit -m "Description of changes"
-
-# 4. Push to GitHub
-git push origin main
-
-# 5. Deployment happens automatically!
-# (Render, Railway auto-deploy on push)
-# (Heroku: git push heroku main)
+# Render Dashboard
+View Logs → Real-time logs
 ```
 
 ---
 
-## 📱 Step 9: Custom Domain (Optional)
+## 🚦 Testing Checklist
 
-### Render.com
-1. Go to Settings → Custom Domains
-2. Add your domain
-3. Update DNS records as instructed
+Before going live, test:
 
-### Heroku
+- [ ] User login (all roles)
+- [ ] Create patient
+- [ ] Create lab test
+- [ ] Update lab results
+- [ ] Create prescription
+- [ ] Dispense medicine
+- [ ] Real-time updates (open 2 browser tabs)
+- [ ] File upload (ultrasound images)
+- [ ] Payment with QR code
+- [ ] Statistics dashboard
+- [ ] Activity log (admin)
+
+---
+
+## 🆘 Support & Maintenance
+
+### Database Backup
 ```bash
-heroku domains:add www.yourdomain.com
-heroku domains:add yourdomain.com
+# Backup database
+cp database/nicotine.db database/nicotine-backup-$(date +%Y%m%d).db
 ```
 
-### Railway
-1. Settings → Domains
-2. Click "Custom Domain"
-3. Follow DNS instructions
+### Update Deployment
+```bash
+git add .
+git commit -m "Update: description"
+git push
+# Render auto-deploys!
+```
+
+### View Logs
+```bash
+# Render Dashboard → Logs
+# Or use Render CLI
+render logs -f
+```
 
 ---
 
-## ✅ Final Checklist
+## 📝 Migration from v3.0 to v3.1
 
-- [ ] Code on GitHub: https://github.com/mohammedelsir95-maker/nicotine-clinic
-- [ ] App deployed and accessible online
-- [ ] All default passwords changed
-- [ ] Environment variables configured
-- [ ] Health check endpoint working
-- [ ] All features tested
-- [ ] Mobile responsive confirmed
-- [ ] SSL certificate active (https://)
+If you have existing v3.0 installation:
 
----
+1. **Backup database:**
+   ```bash
+   cp database/nicotine.db database/nicotine-v3.0-backup.db
+   ```
 
-## 🎉 Congratulations!
+2. **Update dependencies:**
+   ```bash
+   npm uninstall better-sqlite3 bcrypt
+   npm install sqlite3 bcryptjs
+   ```
 
-Your NICOTINE Clinic is now live and accessible worldwide!
+3. **Replace server file:**
+   - Copy new `server/index.js`
 
-**Share your deployment:**
-- URL: `https://your-app-name.onrender.com`
-- GitHub: `https://github.com/mohammedelsir95-maker/nicotine-clinic`
+4. **No database migration needed** - Schema is identical!
 
----
+5. **Test locally:**
+   ```bash
+   npm start
+   ```
 
-## 📞 Support
-
-**Issues?**
-- Check the logs first
-- Review this guide
-- Open an issue on GitHub
-- Check platform-specific documentation
-
-**Platform Docs:**
-- Render: https://render.com/docs
-- Heroku: https://devcenter.heroku.com
-- Railway: https://docs.railway.app
+6. **Deploy to Render** as described above
 
 ---
 
-**Made with ❤️ in Sudan 🇸🇩**
+## 🎉 Success Indicators
 
-**NICOTINE Clinic Management System v3.0**
-© 2026 Mohammed Elsir - All Rights Reserved
+When deployment is successful, you should see:
+
+```
+✅ Server Status: Live
+✅ Database: Connected
+✅ Real-time updates: ENABLED
+✅ Async/await: ENABLED
+✅ Error handling: CENTRALIZED
+✅ Default users: Created
+```
+
+**Access your clinic at:** `https://your-app.onrender.com`
+
+**Default credentials:**
+- Admin: `admin / admin123`
+- Doctor: `doctor / 123`
+- Lab: `lab / 123`
+- Pharmacy: `pharmacy / 123`
+
+**⚠️ Change all default passwords immediately!**
+
+---
+
+## 📞 Contact & Credits
+
+**Developer:** Mohammed Elsir  
+**GitHub:** https://github.com/mohammedelsir95-maker/nicotine-clinic  
+**Version:** 3.1.0 (Modernized & Production Ready)  
+**Location:** Sudan 🇸🇩
+
+---
+
+**Made with ❤️ for healthcare in Sudan**
